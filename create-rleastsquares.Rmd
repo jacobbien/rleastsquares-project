@@ -1,0 +1,141 @@
+---
+title: "Creating the ``r params$package_name`` R package"
+author: "Jacob Bien"
+date: "Sept 8, 2022"
+knit: litr::render
+params:
+  package_name: "rleastsquares" # <-- change this to your package name
+  package_parent_dir: "." # <-- relative to this file's location
+---
+
+<!-- This Rmd file contains all the code needed to define an R package.  Press "Knit" in RStudio or more generally run `rmarkdown::render("name-of-this-file.Rmd")` to generate the R package.  Remember that when you want to modify anything about the R package, you should modify this document rather than the package that is outputted.
+-->
+
+\newcommand{\real}{\mathbb R}
+
+Note: This package was coded in a live coding demo.  
+
+## Package setup
+
+We start by specifying the information needed in the DESCRIPTION file of the R package.
+
+```{r package-setup, message=FALSE, results='hide'}
+usethis::create_package(
+  path = ".",
+  fields = list(
+    Package = params$package_name,
+    Version = "0.0.0.9000",
+    Title = "A Package That Does Least Squares",
+    Description = "This package says does least squares.",
+    `Authors@R` = person(
+      given = "Jacob",
+      family = "Bien",
+      email = "jbien@usc.edu",
+      role = c("aut", "cre")
+      )
+  )
+)
+usethis::use_mit_license(copyright_holder = "J. Bien")
+```
+
+Suppose we have a response vector $y\in\real^n$ and a data matrix $X\in\real^{n\times p}$.
+
+We want to find the solution to the problem
+
+$$
+\min_{\beta\in\real^p}\|y-X\beta\|^2
+$$
+
+We'll assume that $X$ is full rank with $n > p$.  We know that the solution is given by
+
+$$
+\hat\beta=(X^TX)^{-1}X^Ty.
+$$
+Our main function does exactly that!
+
+```{r}
+#' Get the OLS solution
+#' 
+#' @param y our response, which is an n-vector
+#' @param X our data matrix, which is n by p
+#' @export
+do_least_squares <- function(y, X) {
+  if(nrow(X) != length(y))
+    stop("The number of rows of X must match the length of y.")
+  as.numeric(solve(crossprod(X), crossprod(X, y)))
+}
+```
+
+Let's see how this works!
+
+```{r}
+set.seed(123)
+n <- 100
+p <- 1
+x <- cbind(1, matrix(rnorm(n*p), n, p))
+beta_star <- c(2, 0.5)
+sigma <- 0.1
+y <- x %*% beta_star + sigma * rnorm(n)
+```
+
+
+```{r}
+betahat <- do_least_squares(y, x)
+```
+
+```{r}
+plot(x[, 2], y)
+abline(betahat[1], betahat[2], col = 2, lwd=2)
+```
+
+Let's see how this compares to `lm`'s answer.
+
+
+```{r}
+fit_lm <- lm(y ~ x[, 2])
+```
+
+```{r}
+fit_lm$coefficients
+```
+
+Compare that to... 
+
+```{r}
+betahat
+```
+
+
+```{r}
+testthat::test_that("do_least_squares() works", {
+  set.seed(123)
+  n <- 100
+  p <- 1
+  x <- cbind(1, matrix(rnorm(n*p), n, p))
+  beta_star <- c(2, 0.5)
+  sigma <- 0.1
+  y <- x %*% beta_star + sigma * rnorm(n)
+  fit_lm <- lm(y ~ x[, 2])
+  # do lm and our function give the same coefficient vector?
+  testthat::expect_equal(do_least_squares(y, x),
+                         as.numeric(fit_lm$coefficients))
+  # do we get the desired error when there is a length mismatch?
+  testthat::expect_error(do_least_squares(y[-1], x), "must match")
+})
+```
+
+Code chunks that have one or more lines starting with `test_that(` (or `testthat::test_that(`) are added to the package as tests.
+
+## Documenting the package and building
+
+We finish by running commands that will document, build, and install the package.  It may also be a good idea to check the package from within this file.
+
+```{r}
+rm(list = ls())
+litr::document() # <-- use instead of devtools::document()
+# devtools::build()
+# devtools::install()
+# devtools::check(document = FALSE)
+```
+
+

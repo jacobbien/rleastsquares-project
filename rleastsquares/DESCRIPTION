@@ -1,0 +1,15 @@
+Package: rleastsquares
+Title: A Package That Does Least Squares
+Version: 0.0.0.9000
+Authors@R: 
+    person("Jacob", "Bien", , "jbien@usc.edu", role = c("aut", "cre"))
+Description: This package says does least squares.
+License: MIT + file LICENSE
+Encoding: UTF-8
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.2.1
+Suggests: 
+    testthat (>= 3.0.0)
+Config/testthat/edition: 3
+LitrVersionUsed: 0.0.4
+LitrId: ddadb4d4ee8bcfe846138243e115e26d
